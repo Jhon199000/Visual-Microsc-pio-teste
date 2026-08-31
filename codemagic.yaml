@@ -1,8 +1,7 @@
 workflows:
   android-release:
-    name: Microscópio USB - Build Android
+    name: Microscópio USB - Build Android APK
     max_build_duration: 60
-    instance_type: linux_x2
 
     environment:
       flutter: 3.47.2
@@ -14,7 +13,6 @@ workflows:
       - name: Preparar ambiente Android
         script: |
           set -e
-          mkdir -p "$CM_BUILD_DIR/android"
           echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/android/local.properties"
           flutter --version
           java -version
@@ -25,7 +23,7 @@ workflows:
           flutter clean
           rm -rf "$CM_BUILD_DIR/build" "$CM_BUILD_DIR/.dart_tool"
 
-      - name: Obter dependências
+      - name: Baixar dependências
         script: |
           set -e
           flutter pub get
