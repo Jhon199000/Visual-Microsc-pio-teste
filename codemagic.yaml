@@ -2,26 +2,32 @@ workflows:
   android-release:
     name: Microscópio USB - Build Android
     max_build_duration: 60
+
     instance_type: mac_mini_m2
+
     environment:
       flutter: stable
-      android_signing:
-        - microscopio_keystore
+
       vars:
         PACKAGE_NAME: "com.microscopiousb"
+
     scripts:
-      - name: Set Flutter version
+      - name: Verificar Flutter
         script: |
           flutter --version
-      - name: Get Flutter packages
+
+      - name: Instalar dependências
         script: |
           flutter pub get
-      - name: Build APK (release)
+
+      - name: Build APK Release
         script: |
           flutter build apk --release --split-per-abi
+
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
       - build/app/outputs/**/mapping.txt
+
     publishing:
       email:
         recipients:
