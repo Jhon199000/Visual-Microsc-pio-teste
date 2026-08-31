@@ -36,13 +36,17 @@ workflows:
 
           java -version
 
-          echo "========== GRADLE =========="
+          echo "========== DIRETÓRIO DO PROJETO =========="
 
-          cd android
+          pwd
 
-          ./gradlew --version
+          echo "========== ARQUIVOS =========="
 
-          cd ..
+          ls -la
+
+          echo "========== ANDROID =========="
+
+          ls -la android || true
 
 
 
