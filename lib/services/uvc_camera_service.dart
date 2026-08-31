@@ -28,7 +28,7 @@ class UvcCameraService {
 
   /// Lista os dispositivos UVC conectados via USB, sem abrir nenhum deles.
   /// Útil para decidir se é preciso perguntar ao usuário qual usar.
-  Future<List<UvcDevice>> listarDispositivos() async {
+  Future<List<UvcUsbDevice>> listarDispositivos() async {
     try {
       await _camera.ensureCameraPermission();
       return await _camera.listUsbDevices();
@@ -156,7 +156,7 @@ class UvcCameraService {
         policy: UvcPreviewPolicy.stableFrames,
       );
       if (!resultado.success) return false;
-      _currentMode = resultado.mode ?? modo;
+      _currentMode = resultado.mode;
       await _camera.attachPreviewTexture(
         _textureId,
         width: _currentMode!.width,
