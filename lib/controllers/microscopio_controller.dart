@@ -26,7 +26,7 @@ class MicroscopioController extends ChangeNotifier {
 
   Future<List<UvcUsbDevice>> listarDispositivos() => _service.listarDispositivos();
 
-  Future<void> inicializar({String? deviceId}) async {
+  Future<void> inicializar({int? deviceId}) async {
     _lastError = null;
     notifyListeners();
 
@@ -37,7 +37,7 @@ class MicroscopioController extends ChangeNotifier {
     }
   }
 
-  Future<void> reconectar({String? deviceId}) async {
+  Future<void> reconectar({int? deviceId}) async {
     await _service.disconnect();
     await inicializar(deviceId: deviceId);
   }
