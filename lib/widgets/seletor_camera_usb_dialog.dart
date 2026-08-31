@@ -10,7 +10,7 @@ import '../controllers/microscopio_controller.dart';
 Future<String?> mostrarSeletorCameraUsb(
   BuildContext context,
   MicroscopioController controller,
-  List<UvcDevice> dispositivosIniciais,
+  List<UvcUsbDevice> dispositivosIniciais,
 ) {
   return showDialog<String>(
     context: context,
@@ -24,7 +24,7 @@ Future<String?> mostrarSeletorCameraUsb(
 
 class _SeletorCameraUsbDialog extends StatefulWidget {
   final MicroscopioController controller;
-  final List<UvcDevice> dispositivosIniciais;
+  final List<UvcUsbDevice> dispositivosIniciais;
 
   const _SeletorCameraUsbDialog({
     required this.controller,
@@ -36,7 +36,7 @@ class _SeletorCameraUsbDialog extends StatefulWidget {
 }
 
 class _SeletorCameraUsbDialogState extends State<_SeletorCameraUsbDialog> {
-  late List<UvcDevice> _dispositivos;
+  late List<UvcUsbDevice> _dispositivos;
   String? _selecionado;
   bool _atualizando = false;
 
