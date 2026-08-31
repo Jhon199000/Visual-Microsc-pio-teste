@@ -39,7 +39,7 @@ class UvcCameraService {
 
   /// Conecta a um dispositivo UVC. Se [deviceId] não for informado, ou não
   /// for encontrado na lista atual, usa o primeiro dispositivo disponível.
-  Future<bool> connect({String? deviceId}) async {
+  Future<bool> connect({int? deviceId}) async {
     try {
       _statusController.add(UvcStatus.connecting);
 
