@@ -24,7 +24,7 @@ class MicroscopioController extends ChangeNotifier {
     });
   }
 
-  Future<List<UvcDevice>> listarDispositivos() => _service.listarDispositivos();
+  Future<List<UvcUsbDevice>> listarDispositivos() => _service.listarDispositivos();
 
   Future<void> inicializar({String? deviceId}) async {
     _lastError = null;
