@@ -2,7 +2,7 @@ workflows:
 
   android-release:
 
-    name: Microscópio USB - Build Android
+    name: Microscópio USB - Android Release
 
     max_build_duration: 60
 
@@ -15,6 +15,7 @@ workflows:
 
       java: 17
 
+
       vars:
 
         PACKAGE_NAME: "com.microscopiousb"
@@ -23,7 +24,31 @@ workflows:
     scripts:
 
 
-      - name: Preparar ambiente Android
+      - name: Mostrar ambiente
+
+        script: |
+
+          set -e
+
+          echo "========== FLUTTER =========="
+
+          flutter --version
+
+          echo "========== JAVA =========="
+
+          java -version
+
+          echo "========== GRADLE =========="
+
+          cd android
+
+          ./gradlew --version
+
+          cd ..
+
+
+
+      - name: Preparar local.properties
 
         script: |
 
@@ -33,12 +58,9 @@ workflows:
 
           echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/android/local.properties"
 
-          flutter --version
-
-          java -version
 
 
-      - name: Limpar build anterior
+      - name: Limpar projeto
 
         script: |
 
@@ -51,7 +73,8 @@ workflows:
           rm -rf "$CM_BUILD_DIR/.dart_tool"
 
 
-      - name: Obter dependências
+
+      - name: Baixar dependências
 
         script: |
 
@@ -60,13 +83,25 @@ workflows:
           flutter pub get
 
 
-      - name: Verificar projeto
+
+      - name: Verificar dependências
+
+        script: |
+
+          set -e
+
+          flutter pub deps
+
+
+
+      - name: Analisar código
 
         script: |
 
           set -e
 
           flutter analyze --no-fatal-infos
+
 
 
       - name: Build APK Release
@@ -78,8 +113,9 @@ workflows:
           flutter build apk --release --verbose
 
 
+
     artifacts:
 
       - build/app/outputs/flutter-apk/*.apk
 
-      - build/app/outputs/**/mapping.txt          failure: true
+      - build/app/outputs/**/mapping.txt
