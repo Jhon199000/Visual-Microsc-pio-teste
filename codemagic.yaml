@@ -1,123 +1,45 @@
 workflows:
-
   android-release:
-
-    name: Microscópio USB - Android Release
-
+    name: Microscópio USB - Build Android
     max_build_duration: 60
-
+    instance_type: linux_x2
 
     environment:
-
-      flutter: 3.35.1
-
+      flutter: 3.47.2
       java: 17
-
-
       vars:
-
         PACKAGE_NAME: "com.microscopiousb"
 
-
     scripts:
-
-
-      - name: Mostrar ambiente
-
+      - name: Preparar ambiente Android
         script: |
-
           set -e
-
-          echo "========== FLUTTER =========="
-
+          mkdir -p "$CM_BUILD_DIR/android"
+          echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/android/local.properties"
           flutter --version
-
-          echo "========== JAVA =========="
-
           java -version
 
-          echo "========== DIRETÓRIO DO PROJETO =========="
-
-          pwd
-
-          echo "========== ARQUIVOS =========="
-
-          ls -la
-
-          echo "========== ANDROID =========="
-
-          ls -la android || true
-
-
-
-      - name: Preparar local.properties
-
+      - name: Limpar build anterior
         script: |
-
           set -e
-
-          mkdir -p "$CM_BUILD_DIR/android"
-
-          echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-
-
-
-      - name: Limpar projeto
-
-        script: |
-
-          set -e
-
           flutter clean
+          rm -rf "$CM_BUILD_DIR/build" "$CM_BUILD_DIR/.dart_tool"
 
-          rm -rf "$CM_BUILD_DIR/build"
-
-          rm -rf "$CM_BUILD_DIR/.dart_tool"
-
-
-
-      - name: Baixar dependências
-
+      - name: Obter dependências
         script: |
-
           set -e
-
           flutter pub get
 
-
-
-      - name: Verificar dependências
-
+      - name: Verificar projeto
         script: |
-
           set -e
-
-          flutter pub deps
-
-
-
-      - name: Analisar código
-
-        script: |
-
-          set -e
-
           flutter analyze --no-fatal-infos
 
-
-
       - name: Build APK Release
-
         script: |
-
           set -e
-
           flutter build apk --release --verbose
 
-
-
     artifacts:
-
       - build/app/outputs/flutter-apk/*.apk
-
       - build/app/outputs/**/mapping.txt
