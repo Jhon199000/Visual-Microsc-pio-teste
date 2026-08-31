@@ -7,12 +7,12 @@ import '../controllers/microscopio_controller.dart';
 /// (relista os dispositivos), "Cancelar" e "OK".
 ///
 /// Retorna o `deviceId` escolhido, ou `null` se o usuário cancelou.
-Future<String?> mostrarSeletorCameraUsb(
+Future<int?> mostrarSeletorCameraUsb(
   BuildContext context,
   MicroscopioController controller,
   List<UvcUsbDevice> dispositivosIniciais,
 ) {
-  return showDialog<String>(
+  return showDialog<int>(
     context: context,
     barrierDismissible: false,
     builder: (context) => _SeletorCameraUsbDialog(
@@ -37,7 +37,7 @@ class _SeletorCameraUsbDialog extends StatefulWidget {
 
 class _SeletorCameraUsbDialogState extends State<_SeletorCameraUsbDialog> {
   late List<UvcUsbDevice> _dispositivos;
-  String? _selecionado;
+  int? _selecionado;
   bool _atualizando = false;
 
   @override
@@ -81,7 +81,7 @@ class _SeletorCameraUsbDialogState extends State<_SeletorCameraUsbDialog> {
                 : Column(
                     mainAxisSize: MainAxisSize.min,
                     children: _dispositivos.map((dispositivo) {
-                      return RadioListTile<String>(
+                      return RadioListTile<int>(
                         title: Text(dispositivo.displayName),
                         value: dispositivo.deviceId,
                         groupValue: _selecionado,
