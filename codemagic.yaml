@@ -28,7 +28,6 @@ workflows:
             echo "Aplicando patch em: $PLUGIN"
             cp "$PLUGIN" "$PLUGIN.bak"
 
-            # Substitui o register da task por uma versão segura
             sed -i 's/rootProject\.tasks\.register("generateLockfiles")/if (rootProject.tasks.findByName("generateLockfiles") == null) rootProject.tasks.register("generateLockfiles")/g' "$PLUGIN"
             sed -i "s/rootProject\.tasks\.register('generateLockfiles')/if (rootProject.tasks.findByName(\"generateLockfiles\") == null) rootProject.tasks.register(\"generateLockfiles\")/g" "$PLUGIN"
 
