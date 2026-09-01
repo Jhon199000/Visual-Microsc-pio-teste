@@ -8,7 +8,7 @@ class GaleriaScreen extends StatelessWidget {
   const GaleriaScreen({super.key, required this.fotos});
 
   Future<void> _compartilhar(File arquivo) async {
-    await SharePlus.instance.share(ShareParams(files: [XFile(arquivo.path)]));
+    await Share.shareXFiles([XFile(arquivo.path)]);
   }
 
   @override
