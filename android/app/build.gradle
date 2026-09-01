@@ -7,7 +7,7 @@ plugins {
 android {
     namespace "com.microscopiousb"
     compileSdk 36
-    ndkVersion "26.3.11579264"
+    ndkVersion "28.2.13676358"
 
     defaultConfig {
         applicationId "com.microscopiousb"
@@ -44,6 +44,18 @@ android {
                 // Allows the project to build in Codemagic before a production
                 // keystore has been uploaded. This fallback uses the standard
                 // Android debug key and is NOT suitable for Google Play release.
+                def debugKeystoreFile = file("${System.getProperty('user.home')}/.android/debug.keystore")
+                if (!debugKeystoreFile.exists()) {
+                    debugKeystoreFile.parentFile.mkdirs()
+                    exec {
+                        commandLine 'keytool', '-genkeypair', '-v',
+                            '-keystore', debugKeystoreFile.absolutePath,
+                            '-storepass', 'android', '-keypass', 'android',
+                            '-alias', 'androiddebugkey', '-keyalg', 'RSA', '-keysize', '2048',
+                            '-validity', '10000',
+                            '-dname', 'CN=Android Debug,O=Android,C=US'
+                    }
+                }
                 initWith signingConfigs.debug
             }
         }
@@ -57,5 +69,5 @@ android {
 }
 
 flutter {
-    source "../.."
+    source = "../.."
 }
