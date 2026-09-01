@@ -1,0 +1,82 @@
+workflows:
+  android-release:
+    name: Visual Microscópio - Android Release
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      flutter: 3.47.2
+
+    scripts:
+      - name: DIAGNÓSTICO - estrutura do projeto
+        script: |
+          set -e
+          echo "=== DIRETÓRIO ATUAL ==="
+          pwd
+          ls -la
+          flutter --version
+
+      - name: Patch agressivo generateLockfiles
+        script: |
+          set -e
+          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
+          echo "Flutter root: $FLUTTER_ROOT"
+
+          PLUGIN1="$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt"
+          PLUGIN2="$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
+
+          for PLUGIN in "$PLUGIN1" "$PLUGIN2"; do
+            if [ -f "$PLUGIN" ]; then
+              echo "Encontrado: $PLUGIN"
+              cp "$PLUGIN" "$PLUGIN.bak"
+
+              python3 -c "
+import re
+from pathlib import Path
+path = Path('$PLUGIN')
+text = path.read_text(encoding='utf-8')
+
+text2 = re.sub(
+    r'rootProject\.tasks\.register\([\"'\\'']generateLockfiles[\"'\\'']\)',
+    r'/* patched */ if (false) rootProject.tasks.register(\"generateLockfiles_disabled\")',
+    text
+)
+
+text2 = re.sub(
+    r'tasks\.register\([\"'\\'']generateLockfiles[\"'\\'']\)',
+    r'/* patched */ if (false) tasks.register(\"generateLockfiles_disabled\")',
+    text2
+)
+
+if text2 != text:
+    path.write_text(text2, encoding='utf-8')
+    print('Patch aplicado com sucesso')
+else:
+    print('Nenhuma ocorrência encontrada')
+"
+            fi
+          done
+
+          echo "Patch finalizado"
+
+      - name: Limpeza completa
+        script: |
+          set -e
+          flutter clean
+          rm -rf android/.gradle
+          rm -rf android/app/build
+          rm -rf build
+          rm -rf .dart_tool
+
+      - name: Get Flutter packages
+        script: |
+          set -e
+          flutter pub get
+
+      - name: Build APK (release)
+        script: |
+          set -e
+          flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
+
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk

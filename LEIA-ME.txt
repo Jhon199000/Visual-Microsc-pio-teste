@@ -1,0 +1,32 @@
+MICROSCÓPIO USB - VERSÃO CORRIGIDA PARA CODEMAGIC
+================================================
+
+Esta versão contém as correções necessárias para buildar no Codemagic:
+
+1. Flutter 3.47.2 (compatível com Dart >= 3.8.1)
+2. Android Gradle Plugin 8.6.0
+3. Kotlin 2.0.21
+4. android.newDsl=false
+5. Flag --android-skip-build-dependency-validation
+6. Estrutura correta na raiz do repositório
+
+ESTRUTURA ESPERADA NO GITHUB:
+-----------------------------
+raiz do repositório/
+├── android/
+├── assets/
+│   └── images/
+├── ios/
+├── lib/
+├── codemagic.yaml
+├── pubspec.yaml
+└── LEIA-ME.txt
+
+COMO USAR:
+----------
+1. Delete tudo do repositório atual no GitHub
+2. Faça upload desta pasta inteira (com os arquivos na raiz)
+3. Rode o build no Codemagic
+
+O APK será gerado em:
+build/app/outputs/flutter-apk/
