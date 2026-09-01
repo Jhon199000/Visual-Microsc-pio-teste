@@ -1,79 +1,43 @@
 workflows:
   android-release:
-    name: Visual Microscópio - Android Release
-    instance_type: mac_mini_m2
+    name: Microscópio USB - Build Android
     max_build_duration: 60
-
-    # O projeto Flutter está dentro da pasta "microscopio".
-    # Todos os scripts abaixo serão executados a partir dela.
-    working_directory: microscopio
-
+    instance_type: mac_mini_m2
     environment:
       flutter: 3.47.2
-
+      vars:
+        PACKAGE_NAME: "com.microscopiousb"
     scripts:
-      - name: Diagnóstico - diretório e projeto Flutter
+      - name: Set Flutter version
         script: |
-          set -e
-          echo "=== DIRETÓRIO ATUAL ==="
-          pwd
-
-          echo "=== CONTEÚDO DO DIRETÓRIO ==="
-          ls -la
-
-          echo "=== PUBSPEC ==="
-          if [ -f pubspec.yaml ]; then
-            echo "OK: pubspec.yaml encontrado em $(pwd)"
-          else
-            echo "ERRO: pubspec.yaml NÃO encontrado em $(pwd)"
-            exit 1
-          fi
-
-          echo "=== FLUTTER ==="
           flutter --version
 
       - name: Patch Flutter Gradle lockfile task collision
         script: |
-          set -e
-
-          FLUTTER_BIN="$(command -v flutter)"
-          FLUTTER_ROOT="$(cd "$(dirname "$FLUTTER_BIN")/.." && pwd)"
-          PLUGIN="$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt"
-
-          echo "Flutter root: $FLUTTER_ROOT"
-          echo "FlutterPlugin.kt: $PLUGIN"
-
-          if [ ! -f "$PLUGIN" ]; then
-            echo "ERRO: FlutterPlugin.kt não encontrado."
-            exit 1
-          fi
-
-          python3 - "$PLUGIN" <<'PY'
-          import sys
+          python3 - <<'PY'
+          import shutil
           from pathlib import Path
 
-          plugin = Path(sys.argv[1])
-          text = plugin.read_text(encoding="utf-8")
+          flutter_bin = shutil.which("flutter")
+          if not flutter_bin:
+              raise SystemExit("Flutter executable not found")
 
+          flutter_root = Path(flutter_bin).resolve().parent.parent
+          plugin = flutter_root / "packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt"
+
+          if not plugin.exists():
+              raise SystemExit(f"FlutterPlugin.kt not found: {plugin}")
+
+          text = plugin.read_text(encoding="utf-8")
           marker = "private fun addTaskForLockfileGeneration(rootProject: Project)"
           start = text.find(marker)
-
-          if start == -1:
-              print("Função de lockfile não encontrada; nenhum patch aplicado.")
-              raise SystemExit(0)
+          if start < 0:
+              raise SystemExit("Flutter lockfile task function not found; refusing to patch unknown SDK layout")
 
           next_marker = "    private fun addFlutterTasks(projectToAddTasksTo: Project)"
           end = text.find(next_marker, start)
-
-          if end == -1:
-              print("Limite da função não encontrado; não vou alterar o SDK.")
-              raise SystemExit(1)
-
-          old = text[start:end]
-
-          if 'findByName("generateLockfiles")' in old:
-              print("Patch já está aplicado.")
-              raise SystemExit(0)
+          if end < 0:
+              raise SystemExit("Flutter addFlutterTasks function not found; refusing to patch unknown SDK layout")
 
           replacement = '''private fun addTaskForLockfileGeneration(rootProject: Project) {
               if (rootProject.tasks.findByName("generateLockfiles") != null) {
@@ -96,24 +60,29 @@ workflows:
 
           '''
 
-          plugin.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
-          print("Patch aplicado com sucesso.")
+          text = text[:start] + replacement + text[end:]
+          plugin.write_text(text, encoding="utf-8")
+          print(f"Patched Flutter Gradle plugin: {plugin}")
           PY
 
       - name: Get Flutter packages
         script: |
-          set -e
-          echo "Executando flutter pub get em:"
-          pwd
+          cd microscopio
           flutter pub get
 
       - name: Build APK (release)
         script: |
-          set -e
-          echo "Executando Flutter build em:"
-          pwd
+          cd microscopio
           flutter build apk --release --split-per-abi
 
     artifacts:
-      - build/app/outputs/flutter-apk/*.apk
-      - build/app/outputs/**/mapping.txt
+      - microscopio/build/app/outputs/flutter-apk/*.apk
+      - microscopio/build/app/outputs/**/mapping.txt
+
+    publishing:
+      email:
+        recipients:
+          - seu-email@exemplo.com
+        notify:
+          success: true
+          failure: true
