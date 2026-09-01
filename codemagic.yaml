@@ -16,54 +16,6 @@ workflows:
           ls -la
           flutter --version
 
-      - name: Patch generateLockfiles (versão forte)
-        script: |
-          set -e
-          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
-          PLUGIN="$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt"
-
-          echo "Procurando: $PLUGIN"
-
-          if [ ! -f "$PLUGIN" ]; then
-            echo "Arquivo não encontrado"
-            exit 0
-          fi
-
-          # Remove qualquer registro duplicado da task generateLockfiles
-          python3 << EOF
-          from pathlib import Path
-          import re
-
-          path = Path("$PLUGIN")
-          text = path.read_text(encoding="utf-8")
-
-          # Se já tiver a proteção, não faz nada
-          if 'findByName("generateLockfiles")' in text:
-              print("Patch já existe")
-          else:
-              # Substitui a função inteira por uma versão segura
-              pattern = r'private fun addTaskForLockfileGeneration\(rootProject: Project\) \{[\s\S]*?\n    \}'
-              
-              replacement = '''private fun addTaskForLockfileGeneration(rootProject: Project) {
-                  if (rootProject.tasks.findByName("generateLockfiles") != null) {
-                      return
-                  }
-                  rootProject.tasks.register("generateLockfiles") {
-                      doLast {
-                          // empty safe version
-                      }
-                  }
-              }'''
-
-              new_text, count = re.subn(pattern, replacement, text, count=1)
-              
-              if count > 0:
-                  path.write_text(new_text, encoding="utf-8")
-                  print("Patch aplicado com sucesso!")
-              else:
-                  print("Não conseguiu localizar a função. Continuando mesmo assim...")
-          EOF
-
       - name: Get Flutter packages
         script: |
           set -e
