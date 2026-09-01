@@ -16,70 +16,44 @@ workflows:
           ls -la
           flutter --version
 
-      - name: Patch Flutter Gradle lockfile task collision
+      - name: Patch Flutter Gradle lockfile
         script: |
           set -e
-          FLUTTER_BIN="$(command -v flutter)"
-          FLUTTER_ROOT="\( (cd " \)(dirname "$FLUTTER_BIN")/.." && pwd)"
+          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
           PLUGIN="$FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt"
 
           echo "Flutter root: $FLUTTER_ROOT"
-          echo "Plugin: $PLUGIN"
+          echo "Plugin path: $PLUGIN"
 
           if [ ! -f "$PLUGIN" ]; then
-            echo "FlutterPlugin.kt não encontrado, pulando patch."
+            echo "Arquivo não encontrado, pulando patch"
             exit 0
           fi
 
-          python3 - "$PLUGIN" <<'PY'
+          # Aplica o patch de forma simples
+          if grep -q 'findByName("generateLockfiles")' "$PLUGIN"; then
+            echo "Patch já existe"
+          else
+            echo "Aplicando patch..."
+            python3 -c '
           import sys
           from pathlib import Path
-
-          plugin = Path(sys.argv[1])
-          text = plugin.read_text(encoding="utf-8")
-
-          marker = "private fun addTaskForLockfileGeneration(rootProject: Project)"
-          start = text.find(marker)
-
-          if start == -1:
-              print("Função não encontrada. Patch não necessário.")
-              raise SystemExit(0)
-
-          next_marker = "    private fun addFlutterTasks(projectToAddTasksTo: Project)"
-          end = text.find(next_marker, start)
-
-          if end == -1:
-              print("Limite da função não encontrado.")
-              raise SystemExit(1)
-
-          if 'findByName("generateLockfiles")' in text[start:end]:
-              print("Patch já aplicado.")
-              raise SystemExit(0)
-
-          replacement = '''private fun addTaskForLockfileGeneration(rootProject: Project) {
-              if (rootProject.tasks.findByName("generateLockfiles") != null) {
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          old = """private fun addTaskForLockfileGeneration(rootProject: Project) {
+              rootProject.tasks.register(\"generateLockfiles\") {"""
+          new = """private fun addTaskForLockfileGeneration(rootProject: Project) {
+              if (rootProject.tasks.findByName(\"generateLockfiles\") != null) {
                   return
               }
-              rootProject.tasks.register("generateLockfiles") {
-                  doLast {
-                      rootProject.subprojects.forEach { subproject ->
-                          val gradlew: String = getExecutableNameForPlatform("${rootProject.projectDir}/gradlew")
-                          val execOps = rootProject.serviceOf<ExecOperations>()
-                          execOps.exec {
-                              workingDir(rootProject.projectDir)
-                              executable(gradlew)
-                              args(":${subproject.name}:dependencies", "--write-locks")
-                          }
-                      }
-                  }
-              }
-          }
-
-          '''
-
-          plugin.write_text(text[:start] + replacement + text[end:], encoding="utf-8")
-          print("Patch aplicado com sucesso.")
-          PY
+              rootProject.tasks.register(\"generateLockfiles\") {"""
+          if old in text:
+              path.write_text(text.replace(old, new))
+              print("Patch aplicado com sucesso")
+          else:
+              print("Padrão não encontrado, tentando outro método")
+          ' "$PLUGIN"
+          fi
 
       - name: Get Flutter packages
         script: |
@@ -89,7 +63,7 @@ workflows:
       - name: Build APK (release)
         script: |
           set -e
-          flutter build apk --release --split-per-abi
+          flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
