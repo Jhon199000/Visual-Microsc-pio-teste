@@ -1,0 +1,73 @@
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace "com.microscopiousb"
+    compileSdk 36
+    ndkVersion "28.2.13676358"
+
+    defaultConfig {
+        applicationId "com.microscopiousb"
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    signingConfigs {
+        release {
+            // When a Codemagic Android keystore is configured, Codemagic
+            // exposes these values through CM_* environment variables.
+            def cmKeystorePath = System.getenv("CM_KEYSTORE_PATH")
+            def cmKeystorePassword = System.getenv("CM_KEYSTORE_PASSWORD")
+            def cmKeyAlias = System.getenv("CM_KEY_ALIAS")
+            def cmKeyPassword = System.getenv("CM_KEY_PASSWORD")
+
+            if (cmKeystorePath && cmKeystorePassword && cmKeyAlias && cmKeyPassword) {
+                storeFile file(cmKeystorePath)
+                storePassword cmKeystorePassword
+                keyAlias cmKeyAlias
+                keyPassword cmKeyPassword
+            } else {
+                // Allows the project to build in Codemagic before a production
+                // keystore has been uploaded. This fallback uses the standard
+                // Android debug key and is NOT suitable for Google Play release.
+                def debugKeystoreFile = file("${System.getProperty('user.home')}/.android/debug.keystore")
+                if (!debugKeystoreFile.exists()) {
+                    debugKeystoreFile.parentFile.mkdirs()
+                    exec {
+                        commandLine 'keytool', '-genkeypair', '-v',
+                            '-keystore', debugKeystoreFile.absolutePath,
+                            '-storepass', 'android', '-keypass', 'android',
+                            '-alias', 'androiddebugkey', '-keyalg', 'RSA', '-keysize', '2048',
+                            '-validity', '10000',
+                            '-dname', 'CN=Android Debug,O=Android,C=US'
+                    }
+                }
+                initWith signingConfigs.debug
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+flutter {
+    source "../.."
+}
