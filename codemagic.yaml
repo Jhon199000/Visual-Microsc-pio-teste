@@ -1,0 +1,55 @@
+workflows:
+  android-release:
+    name: Visual Microscópio - Diagnóstico
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    working_directory: microscopio
+
+    environment:
+      flutter: 3.47.2
+
+    scripts:
+      - name: DIAGNÓSTICO - estrutura do projeto
+        script: |
+          echo "========================================"
+          echo "DIAGNÓSTICO CODEMAGIC / FLUTTER"
+          echo "========================================"
+
+          echo ""
+          echo "=== PWD ==="
+          pwd
+
+          echo ""
+          echo "=== CONTEÚDO DO DIRETÓRIO ATUAL ==="
+          ls -la
+
+          echo ""
+          echo "=== PUBSPEC.YAML ENCONTRADOS ==="
+          find .. -name pubspec.yaml -print 2>/dev/null || true
+
+          echo ""
+          echo "=== CODEMAGIC.YAML ENCONTRADOS ==="
+          find .. -name codemagic.yaml -print 2>/dev/null || true
+
+          echo ""
+          echo "=== SETTINGS.GRADLE ENCONTRADOS ==="
+          find .. -name settings.gradle -print 2>/dev/null || true
+
+          echo ""
+          echo "=== BUILD.GRADLE ENCONTRADOS ==="
+          find .. -name build.gradle -print 2>/dev/null || true
+
+          echo ""
+          echo "=== FLUTTER ==="
+          command -v flutter || true
+          flutter --version || true
+
+          echo ""
+          echo "========================================"
+          echo "FIM DO DIAGNÓSTICO"
+          echo "========================================"
+
+      - name: PARAR APÓS DIAGNÓSTICO
+        script: |
+          echo "Diagnóstico concluído. Nenhum build será executado nesta etapa."
+          exit 0
