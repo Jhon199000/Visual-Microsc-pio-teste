@@ -1,0 +1,88 @@
+workflows:
+  android-release:
+    name: Microscópio USB - Build Android
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.47.2
+      vars:
+        PACKAGE_NAME: "com.microscopiousb"
+    scripts:
+      - name: Set Flutter version
+        script: |
+          flutter --version
+
+      - name: Patch Flutter Gradle lockfile task collision
+        script: |
+          python3 - <<'PY'
+          import shutil
+          from pathlib import Path
+
+          flutter_bin = shutil.which("flutter")
+          if not flutter_bin:
+              raise SystemExit("Flutter executable not found")
+
+          flutter_root = Path(flutter_bin).resolve().parent.parent
+          plugin = flutter_root / "packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt"
+
+          if not plugin.exists():
+              raise SystemExit(f"FlutterPlugin.kt not found: {plugin}")
+
+          text = plugin.read_text(encoding="utf-8")
+          marker = "private fun addTaskForLockfileGeneration(rootProject: Project)"
+          start = text.find(marker)
+          if start < 0:
+              raise SystemExit("Flutter lockfile task function not found; refusing to patch unknown SDK layout")
+
+          next_marker = "    private fun addFlutterTasks(projectToAddTasksTo: Project)"
+          end = text.find(next_marker, start)
+          if end < 0:
+              raise SystemExit("Flutter addFlutterTasks function not found; refusing to patch unknown SDK layout")
+
+          replacement = '''private fun addTaskForLockfileGeneration(rootProject: Project) {
+              if (rootProject.tasks.findByName("generateLockfiles") != null) {
+                  return
+              }
+              rootProject.tasks.register("generateLockfiles") {
+                  doLast {
+                      rootProject.subprojects.forEach { subproject ->
+                          val gradlew: String = getExecutableNameForPlatform("${rootProject.projectDir}/gradlew")
+                          val execOps = rootProject.serviceOf<ExecOperations>()
+                          execOps.exec {
+                              workingDir(rootProject.projectDir)
+                              executable(gradlew)
+                              args(":${subproject.name}:dependencies", "--write-locks")
+                          }
+                      }
+                  }
+              }
+          }
+
+          '''
+
+          text = text[:start] + replacement + text[end:]
+          plugin.write_text(text, encoding="utf-8")
+          print(f"Patched Flutter Gradle plugin: {plugin}")
+          PY
+
+      - name: Get Flutter packages
+        script: |
+          cd microscopio
+          flutter pub get
+
+      - name: Build APK (release)
+        script: |
+          cd microscopio
+          flutter build apk --release --split-per-abi
+
+    artifacts:
+      - microscopio/build/app/outputs/flutter-apk/*.apk
+      - microscopio/build/app/outputs/**/mapping.txt
+
+    publishing:
+      email:
+        recipients:
+          - seu-email@exemplo.com
+        notify:
+          success: true
+          failure: true
